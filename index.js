@@ -125,7 +125,7 @@ async function run() {
           status: data.status
         }
       }
-      const result=await jobApplicationCollection.updatedOne(filter,updatedDoc);
+      const result=await jobApplicationCollection.updateOne(filter,updatedDoc);
       res.send(result);
     })
 
