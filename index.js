@@ -36,7 +36,12 @@ async function run() {
     const jobApplicationCollection=client.db('jobPortal').collection('job_applications')
 
     app.get("/jobs", async (req, res) => {
-      const cursor=jobsCollection.find();
+      const email=req.query.email;
+      let query={};
+      if(email){
+        query={hr_email: email};
+      }
+      const cursor=jobsCollection.find(query);
       const result=await cursor.toArray();
       res.send(result);
     });
@@ -55,6 +60,29 @@ async function run() {
     app.post('/job-application',async(req,res)=>{
       const application=req.body;
       const result=await jobApplicationCollection.insertOne(application);
+
+      // not the best way (use aggregate)
+      const id=application.job_id;
+      const query={_id: new ObjectId(id)};
+      const job=await jobsCollection.findOne(query);
+
+      let count=0;
+      if(job.applicationCount){
+        count=job.applicationCount+1;
+      }
+      else{
+        count=1;
+      }
+
+      const filter={_id: new ObjectId(id)};
+      const updatedDoc={
+        $set:{
+          applicationCount: count
+        }
+      }
+
+      const updatedResult=await jobsCollection.updatedOne(filter,updatedDoc);
+
       res.send(result);
     })
 
