@@ -75,6 +75,14 @@ async function run() {
         }
       }
 
+      app.post('/jobs',async(req,res)=>{
+        const newJob=req.body;
+        const result=await jobsCollection.insertOne(newJob);
+        res.send(result);
+      })
+
+
+
       res.send(result);
     })
 
@@ -93,7 +101,7 @@ async function run() {
     // Ensures that the client will close when you finish/error
     // await client.close();
   }
-}
+} 
 run().catch(console.dir);
 
 app.listen(port, () => {
