@@ -1,13 +1,38 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const jwt=require('jsonwebtoken');
+const cookieparser=require('cookie-parser');
 
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-app.use(cors());
+const logger=(req,res,next)=>{
+  console.log('inside the logger');
+  next();
+}
+
+const verifToken=(req,res,next)=>{
+  const token=req.cookies.token;
+  if(!token){
+    return res.status(401).send({message: 'Unauthorized access'});
+  }
+  jwt.verify(token,process.env.JWT_SECRET,(err,decoded)=>{
+    if(err){
+      return res.status(401).send({message: 'Unauthorized access'})
+    }
+    req.user=decoded;
+    next();
+  })
+}
+
+app.use(cors({
+  origin: ['http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieparser());
 
 app.get("/", (req, res) => {
   res.send("Job is falling from the sky");
@@ -37,6 +62,21 @@ async function run() {
       .db("jobPortal")
       .collection("job_applications");
 
+
+    // Auth realted api
+    app.post('/jwt',async(req,res)=>{
+      const user=req.body;
+      const token=jwt.sign(user,process.env.JWT_SECRET,{expiresIn: '1h'});
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: false,
+      }).send({success: true});
+    })
+
+
+
+      
+    //job realted api
     app.get("/jobs", async (req, res) => {
       const email = req.query.email;
       let query = {};
@@ -79,7 +119,7 @@ async function run() {
         },
       };
 
-      const updatedResult = await jobsCollection.updatedOne(filter, updatedDoc);
+      const updatedResult = await jobsCollection.updateOne(filter, updatedDoc);
 
       res.send(result);
     });
@@ -91,10 +131,15 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/job-application", async (req, res) => {
+    app.get("/job-application",verifToken, async (req, res) => {
       const email = req.query.email;
       const query = { applicant_email: email };
       const result = await jobApplicationCollection.find(query).toArray();
+
+      if(req.user.email!==email)
+      {
+        return res.status(403);
+      }
 
       // bad way
       for (const application of result) {
