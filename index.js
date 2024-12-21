@@ -8,6 +8,21 @@ const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
+app.use(cors({
+  origin: ['http://localhost:5173'],
+  credentials: true
+}));
+app.use(express.json());
+app.use(cookieparser());
+
+app.get("/", (req, res) => {
+  res.send("Job is falling from the sky");
+});
+
+
+
+
+
 const logger=(req,res,next)=>{
   console.log('inside the logger');
   next();
@@ -27,16 +42,10 @@ const verifToken=(req,res,next)=>{
   })
 }
 
-app.use(cors({
-  origin: ['http://localhost:5173'],
-  credentials: true
-}));
-app.use(express.json());
-app.use(cookieparser());
 
-app.get("/", (req, res) => {
-  res.send("Job is falling from the sky");
-});
+
+
+
 
 //mongoDB
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.n7txs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -72,6 +81,15 @@ async function run() {
         secure: false,
       }).send({success: true});
     })
+
+    app.post('/logout',(req,res)=>{
+      res.clearCookie('token',{
+        httpOnly: true,
+        secure: false,
+      }).send({success: true});
+    })
+
+
 
 
 
